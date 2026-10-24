@@ -32,7 +32,7 @@ Mem<3ry: screenshot of a saved reel to card, search (English and Tanglish), week
 - Task 6 changed README.md, HANDOVER.md, server/agent.js, server/index.js, server/test-plan.js, web/src/App.jsx and web/src/styles.css
 - Task 6 backend tests passed: node --test server/test-upload.js server/test-plan.js (12/12); web production build, changed-file syntax checks and git diff --check passed
 - Browser verification passed for a real screenshot upload through the UI to isolated temporary storage, saved-card rendering, real planner output and SSE tool events; mocked upload, item-load, chat and planner failure states and empty states rendered correctly
-- Responsive checks passed at 320, 376, 415, 768 and 1280 CSS pixels without horizontal overflow; visible focus styling was confirmed
+- Responsive checks passed at 320, 376, 415, 768 and 1280 CSS pixels without horizontal overflow; visible focus styling was confirmed, but automated Tab advancement could not be verified in the browser harness
 - Planner output contained two items because only two suitable categories were available in the saved data
 - A real chat request produced a completed search_items event but Gemini returned HTTP 503 twice; the UI showed the friendly error, and a successful live chat response remains unverified
 - The five saved records and pre-existing data/uploads/fcae04fd-6d0e-47f4-bc04-290ba3296683.jpg remain untouched; all upload-flow browser testing used isolated temporary storage
