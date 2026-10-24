@@ -14,14 +14,18 @@ Mem<3ry: screenshot of a saved reel to card, search (English and Tanglish), week
 - server/agent.js runs Gemma 4 function calling through the MCP stdio client for up to five rounds, with retry handling and tool events
 - server/index.js exposes POST /api/chat, GET /api/items, and GET /api/events
 - server/test-chat.js exercises two searches and a day plan without changing data/items.json
+- POST /api/upload accepts one JPEG, PNG, or WebP image up to 8 MB, verifies its signature, extracts and persists the item with a generated upload filename and repository-relative image_path
+- MCP add_item and HTTP uploads share extraction, validation, and item persistence in mcp/item-service.js
+- server/test-upload.js covers valid upload, unsupported MIME type, invalid image signature, oversized upload, extraction failure cleanup, and image_path persistence with a mock Gemini client
+- Task 4b changed HANDOVER.md, mcp/server.js, mcp/item-service.js, server/index.js, and server/test-upload.js
+- Task 4b validation passed: node --test server/test-upload.js (8/8), syntax checks for server/index.js, server/agent.js, mcp/server.js, mcp/item-service.js, and server/test-upload.js, plus mcp/test-search.js; data/items.json hash remained unchanged
 
 ## In progress
-- Task 4a is complete; next work is the React mobile upload and chat UI with tool feed
+- Task 4b is complete; next work is the React mobile upload and chat UI with tool feed
 
 ## Next (ordered)
-1. Build the React mobile chat UI and tool feed panel.
-2. Add upload UI and connect it to item extraction.
-3. Feature freeze at 2:45 PM. Then README polish, demo video, and MLH submission.
+1. Build the React mobile chat and screenshot upload UI with tool feed.
+2. Feature freeze at 2:45 PM. Then README polish, demo video, and MLH submission.
 
 ## How to run
 npm install
@@ -29,6 +33,7 @@ node --env-file=.env mcp/test-add.js
 node --env-file=.env mcp/test-search.js
 node --env-file=.env server/index.js
 node --env-file=.env server/test-chat.js
+node --test server/test-upload.js
 
 ## Gotchas
 - Gemma 4 model id: gemma-4-26b-a4b-it (Gemini API model name is models/gemma-4-26b-a4b-it)
@@ -38,7 +43,8 @@ node --env-file=.env server/test-chat.js
 - mcp/test-add.js clears data/items.json before processing samples/
 - mcp/test-search.js only reads data/items.json and verifies that its contents do not change
 - Start the API with node --env-file=.env server/index.js; it listens on PORT or 3000
-- API routes: POST /api/chat, GET /api/items, and GET /api/events; uploads are not implemented in this step
+- API routes: POST /api/chat, GET /api/items, GET /api/events, and POST /api/upload
+- Upload field is image; JPEG, PNG, and WebP are supported up to 8 MB, with content signature checks
 - Gemini calls retry once; rate-limit and timeout failures return friendly messages
 - Dev laptop has 8 GB RAM and no GPU, so do not run models locally.
 
