@@ -11,20 +11,24 @@ Mem<3ry: screenshot of a saved reel to card, search (English and Tanglish), week
 - MCP stdio server with add_item is implemented in mcp/server.js and validated with a caption input
 - add_item now handles recipe text extraction, topic-only tags, creator handles in source_note, and confidence; sample test resets data/items.json and passed on all five sample images
 - MCP search_items and plan_day tools are implemented; mcp/test-search.js exercises Tanglish and English queries and verifies it leaves data/items.json unchanged
-- Express API in server/index.js exposes chat, upload, item-list, and SSE tool-event endpoints; chat calls Gemma 4 with the live MCP tool list and executes returned function calls over stdio
+- server/agent.js runs Gemma 4 function calling through the MCP stdio client for up to five rounds, with retry handling and tool events
+- server/index.js exposes POST /api/chat, GET /api/items, and GET /api/events
+- server/test-chat.js exercises two searches and a day plan without changing data/items.json
 
 ## In progress
-- Task 4 is complete; next work is the React mobile upload and chat UI with tool feed
+- Task 4a is complete; next work is the React mobile upload and chat UI with tool feed
 
 ## Next (ordered)
-1. Build the React mobile upload and chat UI with a tool feed panel.
-2. Feature freeze at 2:45 PM. Then README polish, demo video, and MLH submission.
+1. Build the React mobile chat UI and tool feed panel.
+2. Add upload UI and connect it to item extraction.
+3. Feature freeze at 2:45 PM. Then README polish, demo video, and MLH submission.
 
 ## How to run
 npm install
 node --env-file=.env mcp/test-add.js
 node --env-file=.env mcp/test-search.js
-npm start
+node --env-file=.env server/index.js
+node --env-file=.env server/test-chat.js
 
 ## Gotchas
 - Gemma 4 model id: gemma-4-26b-a4b-it (Gemini API model name is models/gemma-4-26b-a4b-it)
@@ -33,8 +37,9 @@ npm start
 - Rate limits: not hit during the successful smoke test and MCP validation
 - mcp/test-add.js clears data/items.json before processing samples/
 - mcp/test-search.js only reads data/items.json and verifies that its contents do not change
-- Run the API with npm start; it listens on port 3000 and loads .env via dotenv
-- API routes: GET /api/items, POST /api/items, POST /api/chat, and GET /api/events
+- Start the API with node --env-file=.env server/index.js; it listens on PORT or 3000
+- API routes: POST /api/chat, GET /api/items, and GET /api/events; uploads are not implemented in this step
+- Gemini calls retry once; rate-limit and timeout failures return friendly messages
 - Dev laptop has 8 GB RAM and no GPU, so do not run models locally.
 
 ## Do not touch
