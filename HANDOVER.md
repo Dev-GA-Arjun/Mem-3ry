@@ -10,19 +10,20 @@ Mem<3ry: screenshot of a saved reel to card, search (English and Tanglish), week
 - Smoke test passed against the live Gemini API using the Gemma 4 model and function calling
 - MCP stdio server with add_item is implemented in mcp/server.js and validated with a caption input
 - add_item now handles recipe text extraction, topic-only tags, creator handles in source_note, and confidence; sample test resets data/items.json and passed on all five sample images
+- MCP search_items and plan_day tools are implemented; mcp/test-search.js exercises Tanglish and English queries and verifies it leaves data/items.json unchanged
 
 ## In progress
-- Task 2 is complete; next work is search_items and plan_day
+- Task 3 is complete; next work is the Express agent loop and tool feed
 
 ## Next (ordered)
-1. Implement search_items and plan_day.
-2. Express agent loop, POST /api/chat, SSE /api/events for the tool feed.
-3. React mobile upload and chat UI with tool feed panel.
-4. Feature freeze at 2:45 PM. Then README polish, demo video, MLH submission.
+1. Implement the Express agent loop, POST /api/chat, and SSE /api/events for the tool feed.
+2. Build the React mobile upload and chat UI with a tool feed panel.
+3. Feature freeze at 2:45 PM. Then README polish, demo video, and MLH submission.
 
 ## How to run
 npm install
 node --env-file=.env mcp/test-add.js
+node --env-file=.env mcp/test-search.js
 
 ## Gotchas
 - Gemma 4 model id: gemma-4-26b-a4b-it (Gemini API model name is models/gemma-4-26b-a4b-it)
@@ -30,7 +31,8 @@ node --env-file=.env mcp/test-add.js
 - Fallback strategy: not needed for this model; JSON fallback remains available if a future model does not support function calls
 - Rate limits: not hit during the successful smoke test and MCP validation
 - mcp/test-add.js clears data/items.json before processing samples/
+- mcp/test-search.js only reads data/items.json and verifies that its contents do not change
 - Dev laptop has 8 GB RAM and no GPU, so do not run models locally.
 
 ## Do not touch
-- (none yet)
+- data/items.json has a pre-existing uncommitted modification; preserve it
