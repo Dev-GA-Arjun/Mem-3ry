@@ -4,14 +4,12 @@ import { fileURLToPath } from 'node:url';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 const samplesDir = path.join(repoRoot, 'samples');
+const itemsPath = path.join(repoRoot, 'data', 'items.json');
 
 const imageExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
 
@@ -33,6 +31,8 @@ function detectMimeType(fileName) {
 }
 
 async function main() {
+  fs.writeFileSync(itemsPath, '[]\n', 'utf8');
+
   const files = fs
     .readdirSync(samplesDir)
     .filter((fileName) => imageExtensions.has(path.extname(fileName).toLowerCase()))

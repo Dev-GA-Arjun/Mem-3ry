@@ -33,7 +33,8 @@ Evaluators are about third-year college students. The build must be instantly un
 {
   "id": "string",
   "title": "string",
-  "category": "cafe | food | workout | movie | travel | product | tip | other",
+  "category": "cafe | food | recipe | workout | movie | travel | product | tip | other",
+  "confidence": "high | medium | low",
   "place": "string or null",
   "area": "string or null",
   "key_points": ["string"],
@@ -42,6 +43,8 @@ Evaluators are about third-year college students. The build must be instantly un
   "created_at": "ISO date"
 }
 ```
+
+For recipes, `key_points` includes all legible on-screen text, including ingredients and steps. Tags contain topics only, never account handles. Put a visible creator handle in `source_note`. Use low confidence when any detail is guessed.
 
 ## Nice-to-have (only if ahead at 1:30)
 - Reel Roulette button: random saved item and "do this today"

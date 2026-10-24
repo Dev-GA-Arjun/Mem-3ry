@@ -6,16 +6,14 @@ import { fileURLToPath } from 'node:url';
 import { GoogleGenAI } from '@google/genai';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import dotenv from 'dotenv';
 import { z } from 'zod';
-
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 const itemsPath = path.join(repoRoot, 'data', 'items.json');
-const validCategories = ['cafe', 'food', 'workout', 'movie', 'travel', 'product', 'tip', 'other'];
+const validCategories = ['cafe', 'food', 'recipe', 'workout', 'movie', 'travel', 'product', 'tip', 'other'];
+const validConfidences = ['high', 'medium', 'low'];
 
 const apiKey = process.env.GEMINI_API_KEY;
 const gemmaModel = process.env.GEMMA_MODEL || 'gemma-4-26b-a4b-it';
@@ -100,21 +98,30 @@ function normalizeString(value, fallback = null) {
   return text || fallback;
 }
 
-function normalizeTags(value) {
+function normalizeTags(value, creatorHandles) {
   if (!Array.isArray(value)) return [];
+  const accountHandles = new Set((creatorHandles || '')
+    .split(/\s*(?:,|;|\band\b)\s*/i)
+    .map((handle) => handle.trim().replace(/^@/, '').toLowerCase())
+    .filter(Boolean));
+
   return value
     .map((entry) => normalizeString(entry, ''))
     .filter(Boolean)
     .slice(0, 12)
-    .map((entry) => entry.replace(/^#+\s*/, '').trim());
+    .map((entry) => entry.replace(/^#+\s*/, '').trim())
+    .filter((entry) => {
+      if (entry.startsWith('@')) return false;
+      const normalized = entry.toLowerCase();
+      return !accountHandles.has(normalized);
+    });
 }
 
 function normalizeKeyPoints(value) {
   if (!Array.isArray(value)) return [];
   return value
     .map((entry) => normalizeString(entry, ''))
-    .filter(Boolean)
-    .slice(0, 6);
+    .filter(Boolean);
 }
 
 function validateExtractedItem(item, fallbackCaption) {
@@ -125,18 +132,24 @@ function validateExtractedItem(item, fallbackCaption) {
   const title = normalizeString(item.title, 'Untitled item') || 'Untitled item';
   const categoryValue = normalizeString(item.category, 'other').toLowerCase();
   const category = validCategories.includes(categoryValue) ? categoryValue : 'other';
+  const confidenceValue = normalizeString(item.confidence, 'low').toLowerCase();
+  const confidence = validConfidences.includes(confidenceValue) ? confidenceValue : 'low';
   const place = normalizeString(item.place, null);
   const area = normalizeString(item.area, null);
+  const creatorHandles = normalizeString(item.source_note, null);
+  const sourceNotes = [...new Set([normalizeString(fallbackCaption, null), creatorHandles].filter(Boolean))];
+  const sourceNote = sourceNotes.join(' | ') || null;
 
   const normalizedItem = {
     id: crypto.randomUUID(),
     title,
     category,
+    confidence,
     place,
     area,
     key_points: normalizeKeyPoints(item.key_points).length ? normalizeKeyPoints(item.key_points) : ['Saved reel details'],
-    tags: normalizeTags(item.tags).length ? normalizeTags(item.tags) : ['saved'],
-    source_note: normalizeString(fallbackCaption, null),
+    tags: normalizeTags(item.tags, creatorHandles).length ? normalizeTags(item.tags, creatorHandles) : ['saved'],
+    source_note: sourceNote,
     created_at: new Date().toISOString(),
   };
 
@@ -149,12 +162,18 @@ async function extractItemFromGemini({ image, caption, mimeType }) {
     'Use this shape:',
     '{',
     '  "title": "string",',
-    '  "category": "cafe | food | workout | movie | travel | product | tip | other",',
+    '  "category": "cafe | food | recipe | workout | movie | travel | product | tip | other",',
+    '  "confidence": "high | medium | low",',
     '  "place": "string or null",',
     '  "area": "string or null",',
     '  "key_points": ["string"],',
-    '  "tags": ["string"]',
+    '  "tags": ["string"],',
+    '  "source_note": "comma-separated creator handle(s), prefixed with @, or null"',
     '}',
+    'Use recipe for cooking instructions or recipes.',
+    'Extract all legible on-screen text into key_points, including every ingredient and each step. Do not omit text because the list is long.',
+    'Tags must be topics only. Never put account handles in tags. Put visible creator handles in source_note, prefixed with @ even if the screenshot omits @. Separate multiple handles with commas.',
+    'Use low confidence whenever any detail is guessed, medium when details are partly unclear, and high only when details are directly visible and clear.',
     'If a field is unknown, use null or an empty array.',
     'Return plain JSON without markdown fences.',
   ].join('\n');
