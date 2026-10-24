@@ -7,6 +7,9 @@
     "smoke": "node server/smoke.js"
   },
   "dependencies": {
-    "@google/genai": "^1.16.0"
+    "@google/genai": "^1.16.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "dotenv": "^18.0.9",
+    "zod": "^4.6.7"
   }
 }
