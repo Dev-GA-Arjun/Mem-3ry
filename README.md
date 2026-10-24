@@ -2,6 +2,8 @@
 
 Your saved reels, finally remembered.
 
+[GitHub repository](https://github.com/Dev-GA-Arjun/Mem-3ry)
+
 Mem<3ry turns the reels you screenshot while scrolling into a searchable, actionable memory. Drop a screenshot, and an open-weight model (Gemma 4) extracts the details. Then ask questions in English or Tanglish, or ask it to plan your weekend from what you saved.
 
 Built for otaku.dev'26, a Hacktoberfest Hack Day by Commit Culture (Vels University, Chennai, 24 Oct 2026).
@@ -26,10 +28,14 @@ See docs/ARCHITECTURE.md.
 - Code: open source under the MIT license.
 
 ## Run locally
+
+Requirements: Node.js 20 or newer and npm.
+
 ```
 npm install
-copy .env.example .env   # add GEMINI_API_KEY in Windows
 ```
+
+Create `.env` in the repository root from `.env.example`, then add your `GEMINI_API_KEY`. In PowerShell use `Copy-Item .env.example .env`; in macOS, Linux, or Git Bash use `cp .env.example .env`. Keep the key in the backend environment and never put it in frontend code.
 
 Start the backend in the repository root:
 ```
@@ -45,6 +51,11 @@ npm run dev
 
 Open the Vite URL shown in the terminal (usually http://localhost:5173). The Vite development server proxies `/api` to the backend on port 3000. To use it on a phone, run `npm run dev -- --host 0.0.0.0` from `web/`, then open the laptop's Vite address on the same Wi-Fi.
 
+Run the backend tests from the repository root:
+```
+node --test server/test-upload.js server/test-plan.js
+```
+
 ## Why screenshots?
 Instagram does not give apps access to saved reels, and scraping breaks its terms. A one-second screenshot keeps Mem<3ry safe, simple and account-risk free.
 
@@ -52,4 +63,4 @@ Instagram does not give apps access to saved reels, and scraping breaks its term
 Hack day build. See HANDOVER.md for current progress.
 
 ## License
-MIT
+MIT (see [LICENSE](./LICENSE)).

@@ -191,6 +191,8 @@ async function executeTool(client, call) {
     event.summary = summarizeToolResult(result);
     publishToolEvent(event);
     return {
+      result: fullToolResult(result),
+      isError: result.isError === true,
       functionResponse: {
         name: call.name,
         response: fullToolResult(result),
@@ -202,12 +204,30 @@ async function executeTool(client, call) {
     event.summary = 'Tool call failed. Please try again.';
     publishToolEvent(event);
     return {
+      result: { error: event.summary },
+      isError: true,
       functionResponse: {
         name: call.name,
         response: { error: event.summary },
       },
     };
   }
+}
+
+export async function runPlanner({ vibe, area } = {}) {
+  const client = await getMcpClient();
+  const args = {};
+  if (vibe) args.vibe = vibe;
+  if (area) args.area = area;
+
+  const execution = await executeTool(client, { name: 'plan_day', args });
+  if (execution.isError) {
+    throw new Error(execution.result.error || 'The weekend plan could not be created. Please try again.');
+  }
+  if (!Array.isArray(execution.result.timeline)) {
+    throw new Error('The planner returned an invalid timeline. Please try again.');
+  }
+  return execution.result;
 }
 
 export async function runAgent(message) {
@@ -244,7 +264,8 @@ export async function runAgent(message) {
     }
     const functionResponses = [];
     for (const call of calls) {
-      functionResponses.push(await executeTool(client, call));
+      const execution = await executeTool(client, call);
+      functionResponses.push(execution.functionResponse);
     }
     contents.push({ role: 'user', parts: functionResponses });
   }

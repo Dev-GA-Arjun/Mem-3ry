@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import multer from 'multer';
 
-import { closeAgent, runAgent, toolEvents } from './agent.js';
+import { closeAgent, runAgent, runPlanner, toolEvents } from './agent.js';
 import { extractItemFromGemini, persistItem } from '../mcp/item-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -82,6 +82,7 @@ function removeUploadedFile(filePath) {
 export function createApp({
   aiClient,
   extractItem = extractItemFromGemini,
+  planner = runPlanner,
   repositoryRoot = repoRoot,
   itemsFilePath = itemsPath,
   uploadDirectory = uploadsDir,
@@ -101,6 +102,28 @@ export function createApp({
       response.json({ answer: await runAgent(message) });
     } catch (error) {
       response.status(503).json({ error: error.message || 'Unable to answer right now. Please try again.' });
+    }
+  });
+
+  app.post('/api/plan', async (request, response) => {
+    const { vibe, area } = request.body || {};
+    if (
+      (vibe !== undefined && typeof vibe !== 'string')
+      || (area !== undefined && typeof area !== 'string')
+    ) {
+      response.status(400).json({ error: 'Vibe and area must be text.' });
+      return;
+    }
+
+    try {
+      response.json(await planner({
+        ...(vibe?.trim() ? { vibe: vibe.trim() } : {}),
+        ...(area?.trim() ? { area: area.trim() } : {}),
+      }));
+    } catch (error) {
+      response.status(503).json({
+        error: error.message || 'The weekend plan could not be created. Please try again.',
+      });
     }
   });
 

@@ -6,6 +6,10 @@ const suggestions = [
   { label: 'Plan my Saturday', message: 'plan my saturday' },
 ];
 
+function StateSpinner() {
+  return <span className="state-spinner" aria-hidden="true" />;
+}
+
 function UploadIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -66,6 +70,10 @@ function ItemCard({ item }) {
 function App() {
   const fileInputRef = useRef(null);
   const chatEndRef = useRef(null);
+  const uploadInFlightRef = useRef(false);
+  const chatInFlightRef = useRef(false);
+  const planInFlightRef = useRef(false);
+  const itemsInFlightRef = useRef(false);
   const [items, setItems] = useState([]);
   const [itemsState, setItemsState] = useState('loading');
   const [itemsError, setItemsError] = useState('');
@@ -75,10 +83,15 @@ function App() {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState('');
+  const [planState, setPlanState] = useState('idle');
+  const [planTimeline, setPlanTimeline] = useState([]);
+  const [planMessage, setPlanMessage] = useState('');
   const [toolEvents, setToolEvents] = useState([]);
   const [feedConnected, setFeedConnected] = useState(false);
 
   async function loadItems() {
+    if (itemsInFlightRef.current) return;
+    itemsInFlightRef.current = true;
     setItemsState('loading');
     setItemsError('');
     try {
@@ -88,8 +101,12 @@ function App() {
       setItems(data);
       setItemsState('ready');
     } catch (error) {
-      setItemsError(error.message);
+      setItemsError(error instanceof TypeError
+        ? 'Saved items could not be reached. Check your connection and try again.'
+        : error.message);
       setItemsState('error');
+    } finally {
+      itemsInFlightRef.current = false;
     }
   }
 
@@ -125,7 +142,7 @@ function App() {
     const image = event.target.files?.[0];
     event.target.value = '';
     setUploadMessage('');
-    if (!image) return;
+    if (!image || uploadInFlightRef.current) return;
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(image.type)) {
       setUploadState('error');
@@ -138,6 +155,7 @@ function App() {
       return;
     }
 
+    uploadInFlightRef.current = true;
     setUploadState('loading');
     const formData = new FormData();
     formData.append('image', image);
@@ -150,13 +168,18 @@ function App() {
       setUploadMessage('Saved to your memory.');
     } catch (error) {
       setUploadState('error');
-      setUploadMessage(error.message);
+      setUploadMessage(error instanceof TypeError
+        ? 'The upload could not reach the server. Check your connection and try again.'
+        : error.message);
+    } finally {
+      uploadInFlightRef.current = false;
     }
   }
 
   async function sendMessage(message = chatInput) {
     const prompt = message.trim();
-    if (!prompt || chatLoading) return;
+    if (!prompt || chatInFlightRef.current) return;
+    chatInFlightRef.current = true;
     setChatInput('');
     setChatError('');
     setMessages((current) => [...current, { id: createMessageId(), role: 'user', text: prompt }]);
@@ -171,9 +194,42 @@ function App() {
       if (typeof result.answer !== 'string') throw new Error('The assistant returned no answer.');
       setMessages((current) => [...current, { id: createMessageId(), role: 'assistant', text: result.answer }]);
     } catch (error) {
-      setChatError(error.message);
+      setChatError(error instanceof TypeError
+        ? 'Mem<3ry could not reach the server. Check your connection and try again.'
+        : error.message);
     } finally {
+      chatInFlightRef.current = false;
       setChatLoading(false);
+    }
+  }
+
+  async function planWeekend() {
+    if (planInFlightRef.current) return;
+    planInFlightRef.current = true;
+    setPlanState('loading');
+    setPlanTimeline([]);
+    setPlanMessage('');
+
+    try {
+      const response = await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const result = await readResponse(response);
+      if (!Array.isArray(result.timeline)) {
+        throw new Error('The weekend plan could not be read. Please try again.');
+      }
+      setPlanTimeline(result.timeline);
+      setPlanMessage(result.message || 'No saved items are ready for a plan yet. Save a few more reels and try again.');
+      setPlanState(result.timeline.length ? 'ready' : 'empty');
+    } catch (error) {
+      setPlanMessage(error instanceof TypeError
+        ? 'The planner could not reach the server. Check your connection and try again.'
+        : error.message);
+      setPlanState('error');
+    } finally {
+      planInFlightRef.current = false;
     }
   }
 
@@ -220,11 +276,15 @@ function App() {
                 <span className="panel-index">01</span>
               </div>
               <label
-                className={`upload-target ${uploadState === 'loading' ? 'is-loading' : ''}`}
+                className={`upload-target ${uploadState === 'loading' ? 'is-loading' : ''} ${uploadState === 'error' ? 'is-error' : ''} ${uploadState === 'success' ? 'is-success' : ''}`}
                 htmlFor="screenshot-upload"
+                aria-busy={uploadState === 'loading'}
               >
                 <span className="upload-target__icon"><UploadIcon /></span>
-                <span className="upload-target__title">{uploadState === 'loading' ? 'Reading your screenshot…' : 'Choose a screenshot'}</span>
+                <span className="upload-target__title">
+                  {uploadState === 'loading' && <StateSpinner />}
+                  {uploadState === 'loading' ? 'Reading your screenshot...' : 'Choose a screenshot'}
+                </span>
                 <span className="upload-target__hint">JPEG, PNG, or WebP · up to 8 MB</span>
                 <input
                   ref={fileInputRef}
@@ -235,7 +295,7 @@ function App() {
                   disabled={uploadState === 'loading'}
                 />
               </label>
-              <p className={`status-line status-line--${uploadState}`} role="status" aria-live="polite">
+              <p className={`status-line status-line--${uploadState}`} role={uploadState === 'error' ? 'alert' : 'status'} aria-live={uploadState === 'error' ? 'assertive' : 'polite'}>
                 {uploadMessage || 'Pick from your camera roll or files.'}
               </p>
             </section>
@@ -295,7 +355,45 @@ function App() {
                   </button>
                 ))}
               </div>
-              <div className="conversation" aria-live="polite" aria-label="Conversation">
+              <div className="planner">
+                <button
+                  className="planner-button"
+                  type="button"
+                  onClick={planWeekend}
+                  disabled={planState === 'loading'}
+                  aria-describedby="planner-status"
+                >
+                  {planState === 'loading' && <StateSpinner />}
+                  {planState === 'loading' ? 'Planning your weekend...' : 'Plan my weekend'}
+                </button>
+                <div
+                  id="planner-status"
+                  className={`planner-result planner-result--${planState}`}
+                  role={planState === 'error' ? 'alert' : 'status'}
+                  aria-live={planState === 'error' ? 'assertive' : 'polite'}
+                  aria-busy={planState === 'loading'}
+                >
+                  {planState === 'loading' && <span className="planner-loading"><StateSpinner /> Finding a few saved plans...</span>}
+                  {planState === 'empty' && <p>{planMessage}</p>}
+                  {planState === 'error' && <p>{planMessage}</p>}
+                  {planState === 'ready' && (
+                    <ol className="planner-timeline" aria-label="Weekend timeline">
+                      {planTimeline.map(({ time, item }, index) => (
+                        <li className="planner-stop" key={`${item.id || item.title}-${index}`}>
+                          <time>{time}</time>
+                          <div className="planner-stop__content">
+                            <strong>{item.title || 'Saved item'}</strong>
+                            <span>
+                              {[item.category, item.place, item.area].filter(Boolean).join(' · ')}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </div>
+              <div className="conversation" aria-live="polite" aria-label="Conversation" aria-busy={chatLoading}>
                 {messages.length === 0 && (
                   <div className="conversation-empty">
                     <span className="conversation-empty__orb" aria-hidden="true" />
@@ -310,7 +408,7 @@ function App() {
                 ))}
                 {chatLoading && (
                   <div className="chat-message chat-message--assistant chat-message--loading" role="status">
-                    <span>{"Mem<3ry"}</span><p>Looking through your saved reels…</p>
+                    <span>{"Mem<3ry"}</span><p><StateSpinner />Looking through your saved reels...</p>
                   </div>
                 )}
                 <div ref={chatEndRef} />
@@ -346,7 +444,7 @@ function App() {
                 </div>
                 {itemsState === 'ready' && <span className="shelf-count">{items.length} {items.length === 1 ? 'memory' : 'memories'}</span>}
               </div>
-              {itemsState === 'loading' && <p className="shelf-state">Gathering your saved reels…</p>}
+              {itemsState === 'loading' && <p className="shelf-state" role="status" aria-live="polite" aria-busy="true"><StateSpinner /> Gathering your saved reels...</p>}
               {itemsState === 'error' && (
                 <div className="shelf-state shelf-state--error" role="alert">
                   <p>{itemsError}</p>

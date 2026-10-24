@@ -26,6 +26,16 @@ Mem<3ry: screenshot of a saved reel to card, search (English and Tanglish), week
 - Browser verification passed: GET /api/items returned four saved items, the tool feed connected, the chat search and MCP event were verified, and a mocked multipart image upload updated the UI without writing to saved data
 - Responsive checks passed at 320, 376, 415, 768, and 1280 CSS pixels with no horizontal overflow or wrapped clickable labels; visible text contrast checks passed
 - Existing changes to data/items.json and untracked data/items.backup.json were preserved
+- Task 6 adds POST /api/plan through the existing MCP plan_day tool, with planner loading, empty and error states and an ordered timeline in the existing UI
+- Task 6 adds accessible loading, error, empty and duplicate-submission handling for upload, saved items, chat and planning, while retaining the existing visual design
+- README.md now documents the repository URL, Node and npm setup, environment configuration, development commands and backend test command
+- Task 6 changed README.md, HANDOVER.md, server/agent.js, server/index.js, server/test-plan.js, web/src/App.jsx and web/src/styles.css
+- Task 6 backend tests passed: node --test server/test-upload.js server/test-plan.js (12/12); web production build, changed-file syntax checks and git diff --check passed
+- Browser verification passed for a real screenshot upload through the UI to isolated temporary storage, saved-card rendering, real planner output and SSE tool events; mocked upload, item-load, chat and planner failure states and empty states rendered correctly
+- Responsive checks passed at 320, 376, 415, 768 and 1280 CSS pixels without horizontal overflow; visible focus styling was confirmed
+- Planner output contained two items because only two suitable categories were available in the saved data
+- A real chat request produced a completed search_items event but Gemini returned HTTP 503 twice; the UI showed the friendly error, and a successful live chat response remains unverified
+- The five saved records and pre-existing data/uploads/fcae04fd-6d0e-47f4-bc04-290ba3296683.jpg remain untouched; all upload-flow browser testing used isolated temporary storage
 
 ## In progress
 - None
@@ -41,6 +51,7 @@ node --env-file=.env mcp/test-search.js
 node --env-file=.env server/index.js
 node --env-file=.env server/test-chat.js
 node --test server/test-upload.js
+node --test server/test-plan.js
 cd web
 npm install
 npm run dev
@@ -50,10 +61,12 @@ npm run dev
 - Function calling supported on Gemini API: yes
 - Fallback strategy: not needed for this model; JSON fallback remains available if a future model does not support function calls
 - Rate limits: not hit during the successful smoke test and MCP validation
+- Current live chat verification returned Gemini HTTP 503 after the search_items tool completed; try again when the model service is available
 - mcp/test-add.js clears data/items.json before processing samples/
 - mcp/test-search.js only reads data/items.json and verifies that its contents do not change
 - Start the API with node --env-file=.env server/index.js; it listens on PORT or 3000
 - API routes: POST /api/chat, GET /api/items, GET /api/events, and POST /api/upload
+- POST /api/plan returns a timeline from the existing plan_day MCP tool
 - Upload field is image; JPEG, PNG, and WebP are supported up to 8 MB, with content signature checks
 - Run the backend from the repository root and the Vite app from web/ in separate terminals; Vite proxies /api to port 3000
 - Gemini calls retry once; rate-limit and timeout failures return friendly messages
