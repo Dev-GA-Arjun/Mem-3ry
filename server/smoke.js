@@ -9,10 +9,15 @@ if (!apiKey || apiKey === 'your_key_here') {
 
 const ai = new GoogleGenAI({ apiKey });
 
+function normalizeModelName(rawName) {
+  if (!rawName) return null;
+  return rawName.replace(/^models\//, '');
+}
+
 function pickModelId(models) {
   const candidates = Array.isArray(models) ? models : [];
-  const preferred = candidates.find((model) => /gemma/i.test(model.name || ''));
-  return preferred?.name || candidates[0]?.name || null;
+  const preferred = candidates.find((model) => /gemma/i.test(model.name || model.displayName || ''));
+  return normalizeModelName(preferred?.name || preferred?.displayName || candidates[0]?.name || candidates[0]?.displayName || null);
 }
 
 function extractFunctionCall(response) {
@@ -51,7 +56,10 @@ function parseFallbackJson(text) {
 async function main() {
   console.log('Listing available Gemini models...');
   const modelListResponse = await ai.models.list();
-  const modelNames = (modelListResponse.models || []).map((model) => model.name).filter(Boolean);
+  const rawModels = modelListResponse?.pageInternal || modelListResponse?.models || [];
+  const modelNames = rawModels
+    .map((model) => normalizeModelName(model.name || model.displayName || model.modelName || model.id))
+    .filter(Boolean);
 
   if (!modelNames.length) {
     console.error('No models were available from the Gemini API.');
@@ -60,7 +68,7 @@ async function main() {
 
   console.log('Available models:', modelNames.join(', '));
 
-  const modelId = pickModelId(modelListResponse.models || []);
+  const modelId = pickModelId(rawModels);
   if (!modelId) {
     console.error('Unable to choose a model from the Gemini API response.');
     process.exit(1);
