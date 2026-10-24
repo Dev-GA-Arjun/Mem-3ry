@@ -28,10 +28,22 @@ See docs/ARCHITECTURE.md.
 ## Run locally
 ```
 npm install
-cp .env.example .env     # add GEMINI_API_KEY
+copy .env.example .env   # add GEMINI_API_KEY in Windows
+```
+
+Start the backend in the repository root:
+```
+node --env-file=.env server/index.js
+```
+
+In a second terminal, start the mobile-friendly Vite app:
+```
+cd web
+npm install
 npm run dev
 ```
-Open http://localhost:3000. To use it on a phone, open http://<laptop-ip>:3000 on the same Wi-Fi.
+
+Open the Vite URL shown in the terminal (usually http://localhost:5173). The Vite development server proxies `/api` to the backend on port 3000. To use it on a phone, run `npm run dev -- --host 0.0.0.0` from `web/`, then open the laptop's Vite address on the same Wi-Fi.
 
 ## Why screenshots?
 Instagram does not give apps access to saved reels, and scraping breaks its terms. A one-second screenshot keeps Mem<3ry safe, simple and account-risk free.

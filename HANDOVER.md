@@ -19,13 +19,20 @@ Mem<3ry: screenshot of a saved reel to card, search (English and Tanglish), week
 - server/test-upload.js covers valid upload, unsupported MIME type, invalid image signature, oversized upload, extraction failure cleanup, and image_path persistence with a mock Gemini client
 - Task 4b changed HANDOVER.md, mcp/server.js, mcp/item-service.js, server/index.js, and server/test-upload.js
 - Task 4b validation passed: node --test server/test-upload.js (8/8), syntax checks for server/index.js, server/agent.js, mcp/server.js, mcp/item-service.js, and server/test-upload.js, plus mcp/test-search.js; data/items.json hash remained unchanged
+- Task 5 React/Vite UI is implemented in web/: screenshot upload uses POST /api/upload, saved cards use GET /api/items, chat uses POST /api/chat, and the live tool feed consumes GET /api/events
+- README.md documents starting the backend and Vite frontend in separate terminals
+- Task 5 changed README.md, HANDOVER.md, and web/package.json, web/package-lock.json, web/vite.config.js, web/index.html, web/src/main.jsx, web/src/App.jsx, and web/src/styles.css
+- Task 5 verification passed: npm run build --prefix web, node --test server/test-upload.js (8/8), and git diff --check
+- Browser verification passed: GET /api/items returned four saved items, the tool feed connected, the chat search and MCP event were verified, and a mocked multipart image upload updated the UI without writing to saved data
+- Responsive checks passed at 320, 376, 415, 768, and 1280 CSS pixels with no horizontal overflow or wrapped clickable labels; visible text contrast checks passed
+- Existing changes to data/items.json and untracked data/items.backup.json were preserved
 
 ## In progress
-- Task 4b is complete; next work is the React mobile upload and chat UI with tool feed
+- None
 
 ## Next (ordered)
-1. Build the React mobile chat and screenshot upload UI with tool feed.
-2. Feature freeze at 2:45 PM. Then README polish, demo video, and MLH submission.
+1. Feature freeze at 2:45 PM.
+2. Prepare the demo video and MLH submission.
 
 ## How to run
 npm install
@@ -34,6 +41,9 @@ node --env-file=.env mcp/test-search.js
 node --env-file=.env server/index.js
 node --env-file=.env server/test-chat.js
 node --test server/test-upload.js
+cd web
+npm install
+npm run dev
 
 ## Gotchas
 - Gemma 4 model id: gemma-4-26b-a4b-it (Gemini API model name is models/gemma-4-26b-a4b-it)
@@ -45,6 +55,7 @@ node --test server/test-upload.js
 - Start the API with node --env-file=.env server/index.js; it listens on PORT or 3000
 - API routes: POST /api/chat, GET /api/items, GET /api/events, and POST /api/upload
 - Upload field is image; JPEG, PNG, and WebP are supported up to 8 MB, with content signature checks
+- Run the backend from the repository root and the Vite app from web/ in separate terminals; Vite proxies /api to port 3000
 - Gemini calls retry once; rate-limit and timeout failures return friendly messages
 - Dev laptop has 8 GB RAM and no GPU, so do not run models locally.
 
